@@ -1,0 +1,15 @@
+IPy==0.83
+Jinja2==2.7.3
+MarkupSafe==0.23
+PyYAML==3.11
+git+https://github.com/ansible/ansible.git#stable-2.1
+click==4.0
+ecdsa==0.13
+gandi.cli==0.15
+httplib2==0.9.1
+paramiko==1.15.2
+pycrypto==2.6.1
+requests==2.7.0
+wsgiref==0.1.2
+boto==2.40.0
+six==1.9.0

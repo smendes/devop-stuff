@@ -1,0 +1,62 @@
+---
+- name: Install common packages
+  apt: update_cache=yes upgrade=dist
+  ignore_errors: yes
+
+- apt: name={{item.package}} state=present
+  ignore_errors: yes
+  with_items:
+    - package: 'htop'
+    - package: 'build-essential'
+    - package: 'iotop'
+    - package: 'iftop'
+    - package: 'git'
+    - package: 'python-dev'
+    - package: 'python-pip'
+    - package: 'python-virtualenv'
+    - package: 'avahi-daemon'
+    - package: 'curl'
+    - package: 'zsh'
+    - package: 'avahi-daemon'
+    - package: 'avahi-discover'
+    - package: 'postgresql-client-9.4'
+    - package: 'python-apt'
+    - package: 'vim'
+
+
+- name: Install new relic
+  apt_key: url=https://download.newrelic.com/548C16BF.gpg state=present
+
+- apt_repository: repo='deb http://apt.newrelic.com/debian/ newrelic non-free' state=present
+
+- apt: name='newrelic-sysmond' state=present update_cache=yes
+  ignore_errors: yes
+
+- name: Put newrelic template
+  template:
+    src: nrsysmond.cfg.jinja2
+    dest: "/etc/newrelic/nrsysmond.cfg"
+    mode: 0640
+    owner: newrelic
+    group: newrelic
+
+- filesystem: fstype=ext4 dev=/dev/xvdb
+
+- include_vars: keychain.yml
+- command: nrsysmond-config --set license_key={{ newrelic_key }}
+- service: name=newrelic-sysmond state=restarted
+
+- name: Configure ARP cache
+  command: sysctl -w net.ipv4.neigh.default.gc_thresh1=0
+
+- name: Configure sysctl config file
+  template:
+    src: cache_arp.conf.jinja2
+    dest: "/etc/sysctl.d/cache_arp.conf"
+    mode: 0644
+    owner: root
+    group: root
+
+- name: Restart WebHook
+  service: name=webhook state=restarted
+  become: yes

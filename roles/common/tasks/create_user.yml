@@ -1,0 +1,43 @@
+---
+- name: Create wgsadmin group
+  group: name=wgsadmin state=present
+
+
+- name: Create the user wgsadmin and remove gandi-admin
+  user: name=wgsadmin comment="WGS Admin" group=wgsadmin generate_ssh_key=yes ssh_key_bits=2048 ssh_key_file=.ssh/id_rsa
+
+
+- name: Copy SSH keys
+  authorized_key: user=wgsadmin key={{ lookup('file', item) }}
+  with_fileglob:
+    - ssh_keys/*
+
+
+- name: Install sudo (Debian-like)
+  apt: pkg=sudo state=installed update_cache=yes
+  when: ansible_os_family == "Debian"
+
+- name: Create sudoers.d directory
+  file:
+    path: /etc/sudoers.d
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+
+- name: Set includedir in sudoers
+  lineinfile:
+    dest: /etc/sudoers
+    line: "#includedir /etc/sudoers.d"
+    state: present
+    validate: "/usr/sbin/visudo -cf %s"
+
+
+- name: Create sudoers from sudoers variable
+  template:
+    src: sudoers.d.jinja2
+    dest: "/etc/sudoers.d/{{ sudoers_filename }}"
+    mode: 0440
+    owner: root
+    group: root
+    validate: "/usr/sbin/visudo -cf %s"

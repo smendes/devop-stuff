@@ -1,0 +1,28 @@
+---
+- name: Create AWS resources
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+    vpc_subnet_id: "{{ ['subnet-ead331c0','subnet-988a54ee']|random }}"
+    aws_region: us-east-1
+    hosts_group: swarm_node
+    group_id: sg-3d67c544
+    ami_id: ami-321dd25f
+    tag_group: swarm
+    keypair: stage_ansible
+    instance_type: t2.medium
+    volume_size: 20
+  roles:
+   - ec2-server
+  tags:
+    - create
+
+- name: Setup common
+  hosts: tag_new_node
+  become: yes
+  remote_user: ubuntu
+  roles:
+    - common
+  tags:
+    - setup

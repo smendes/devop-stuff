@@ -1,0 +1,30 @@
+---
+- include_vars: keychain.yml
+- name: create an EC2 instance
+  ec2:
+    aws_access_key: "{{ aws.access_key }}"
+    aws_secret_key: "{{ aws.secret_key }}"
+    region: "{{aws_region}}"
+    instance_type: "{{instance_type}}"
+    image: "{{ami_id}}"
+    wait: yes
+    keypair: "{{keypair}}"
+    vpc_subnet_id: '{{ vpc_subnet_id }}'
+    assign_public_ip: yes
+    group_id: '{{ group_id }}'
+    instance_tags: {"group": "{{ hosts_group }}", "new": "{{ hosts_group }}"}
+    volumes:
+      - device_name: /dev/xvdb
+        volume_size: "{{ volume_size }}"
+        delete_on_termination: true
+
+  register: new_instance
+
+- name: Itemised host group addition
+  # here we add the public_ip var from the list of ec2.instances to a host group called "launched", ready for the next play
+  local_action: add_host hostname={{item.public_ip}} groupname={{tag_group}}
+  with_items: "{{ new_instance.instances }}"
+
+- name: Waiting for server to start
+  wait_for: host={{ item.public_ip }} port=22 delay=60 timeout=320 state=started
+  with_items: "{{ new_instance.instances }}"
